@@ -1,0 +1,182 @@
+﻿#include <msp430.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+/////////////
+#define SERVO_BIT BIT6
+#define SM_clk 1100000
+#define servo_freq 50
+///////////////
+#define BUTTON BIT1
+
+int temp = 0;
+int light = 0;
+int touch = 0;
+int j = 0;
+int n = 0;
+/////////////////
+int i;
+float MS, angle;
+float x, y, z;
+void init()
+{
+int PWM_period = SM_clk /servo_freq;
+P1DIR |= SERVO_BIT; //direction is set
+P1SEL |= SERVO_BIT;// port 1 function is set.
+TA0CCR0 = PWM_period-1; // pwm period
+TA0CCR1 = 0; //duty cycle = TA0CCR0/ TA0CCR1
+TA0CCTL1 = OUTMOD_7;
+}
+/////////////////////
+void ConfigureAdc(void)
+{
+ADC10CTL1 = INCH_2 | CONSEQ_1; 					// Input Channel Select and Conversion Mode Select
+ADC10CTL0 = ADC10SHT_2 | MSC | ADC10ON;			// ADC10SHT_2 � this sets the ADC10�s sample and hold time at 16xADC10CLKs.
+												//  Multiple Samples and Convertions
+												//ADC10ON � this bit turns the ADC10 converter on.
+while (ADC10CTL1 & BUSY);						//ADC Sampling
+ADC10DTC1 = 0x03; 								// 3 conversions
+ADC10AE0 |= (BIT0 | BIT1 | BIT2); 				// ADC10 option select
+
+}
+
+unsigned A[3];  // ADC readings
+
+
+void main(void)
+{
+WDTCTL = WDTPW + WDTHOLD;                 		// Stop WDT
+BCSCTL1 = CALBC1_1MHZ;                    		// Set range
+DCOCTL = CALDCO_1MHZ;
+BCSCTL2 &= ~(DIVS_3);                  			// SMCLK = DCO = 1MHz
+
+
+//Touch Switch
+P1DIR = 0x38; 									// CHANGE FOR CLASS
+P1OUT &= ~(0x08); 								// set P1.0 to 0 (LED OFF)
+
+ConfigureAdc();							  		// Execute ConfigureAdc() function
+__enable_interrupt();                     		// Enable interrupts.
+	n = 20;
+	//////////////////////
+	init();
+	TA0CTL=TASSEL_2+MC_1; // starting timer by setting clock source SMCLK of timer and UP mode
+	///////////////////////
+
+
+	while(1)
+	{
+
+	__delay_cycles(200);                   		// Wait for ADC Ref to settle
+	j = 0; temp = 0; light = 0; touch = 0;
+
+	for(j = 0; j <n ; j++){
+	ADC10CTL0 &= ~ENC;
+
+	while (ADC10CTL1 & BUSY);
+	ADC10SA = (unsigned)&A[0]; 			//RAM Address of ADC Data, must be reset every conversion
+	ADC10CTL0 |= (ENC | ADC10SC); 		//Enable Convertion and Start ADC Conversion
+	while (ADC10CTL1 & BUSY); 			//Wait while ADC is busy
+	__delay_cycles(200);
+
+	temp += A[2];
+	light += A[0];
+	touch += A[1];
+	}
+	temp = temp/n;
+	light = light/n;
+	touch = touch/n;
+
+	///////////////////////
+	if(temp <= 760  && temp >= 739 ){x=2 ;}
+		else x=0;
+	if(temp <= 740  && temp >= 700 ){x=3 ;}
+	else x=x;
+	if(temp <= 699  && temp >= 640 ){x=3.5 ;}
+		else x=x;
+	if(temp <= 639  && temp >= 600 ){x=4; }
+	else x=x;
+	if(temp <= 599  && temp >= 550 ){x=4.5 ;}
+		else x=x;
+	if(temp <= 549 && temp >= 520){x= 5;}
+	else x=x;
+	if(temp <= 519  && temp >= 500 ){x=5.5 ;}
+		else x=x;
+	if(temp <= 499 && temp >= 470){x=6 ;}
+	else x=x;
+	if(temp <= 469  && temp >= 450 ){x=6.5 ;}
+		else x=x;
+	if(temp <= 449 && temp >= 428){x=7 ;}
+	else x=x;
+	if(temp <= 427  && temp >= 405 ){x=7.5 ;}
+		else x=x;
+	if(temp <= 404  && temp >= 385 ){x=8; }
+	else x=x;
+	if(temp <= 384  && temp >= 365 ){x=8.5 ;}
+		else x=x;
+	if(temp <= 364 && temp >= 345 ){x=9 ;}
+	else x=x;
+	if(temp <= 344  && temp >= 328 ){x=9.5 ;}
+		else x=x;
+	if(temp <= 327 && temp >= 309 ){x=10; }
+	else x=x;
+	if(temp <= 308  && temp >= 290 ){x=10.5 ;}
+		else x=x;
+	if(temp <= 289 && temp >= 276 ){x=11; }
+	else x=x;
+	if(temp <= 275  && temp >= 261 ){x=11.5 ;}
+		else x=x;
+	if(temp <= 260 && temp >= 249){x= 12;}
+	else x=x;
+	if(temp <= 248  && temp >= 236 ){x=12.5 ;}
+		else x=x;
+	if(temp <= 237  && temp >= 219 ){x=13 ;}
+		else x=x;
+	if(temp <= 218  && temp >= 202 ){x=13.5 ;}
+		else x=x;
+	if(temp <= 201  && temp >= 190 ){x=14 ;}
+		else x=x;
+	if(temp <= 189  && temp >= 179 ){x=14.5 ;}
+		else x=x;
+	if(temp <= 178){x=15 ;}
+		else x=x;
+
+
+	if(light <= 920  && light >= 897 ){y = 2;}
+	else y=0;
+	if(light <= 896 && light >= 881 ){y = 2.5;}
+	else y=y;
+	if(light <= 880  && light >= 800 ){y = 3;}
+	else y=y;
+	if(light <= 799  && light >= 710 ){y = 3.5;}
+	else y=y;
+	if(light <= 709  && light >= 645 ){y = 4;}
+	else y=y;
+	if(light <= 644  && light >= 604 ){y = 4.5;}
+	else y=y;
+	if(light <= 603){y = 5;}
+	else y=y;
+	////////////////////////
+
+
+	///////////////////////
+
+	z = sqrt((x*x)+(y*y));
+	angle = (180*(asin(x/z)))/3.14; /// finds angle and converts from radian to degree
+	MS = (angle*8.83)+600;  //// Angle to MicroSeconds
+
+
+	TA0CCR1 = MS;
+	__delay_cycles(500000);
+	                       	//////////////////////////////
+
+	}
+
+}
+
+// ADC10 interrupt service routine
+#pragma vector=ADC10_VECTOR
+__interrupt void ADC10_ISR (void)
+{
+__bic_SR_register_on_exit(LPM3_bits);        // Return to active mode
+}
